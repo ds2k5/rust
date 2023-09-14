@@ -1,0 +1,119 @@
+apt-get install gettext
+
+cargo new multilaguage
+cd multilaguage
+cargo add gettext-ng
+cargo add sys_locale
+cargo add current_platform
+
+vi Cargo.toml
+
+folgendes hinzufügen
+
+[profile.release]
+opt-level = 'z'     # Optimize for size
+lto = true          # Enable link-time optimization
+codegen-units = 1   # Reduce number of codegen units to increase optimizations
+panic = 'abort'     # Abort on panic
+strip = true        # Strip symbols from binary*
+
+vi src/main.rs
+
+use std::fs::File;
+use sys_locale::get_locale;
+use gettext_ng::Catalog;
+use std::path::Path;
+use current_platform::{CURRENT_PLATFORM, COMPILED_ON};
+
+fn main() {
+    const VERSION: &str = env!("CARGO_PKG_VERSION");
+    let current_locale = get_locale().unwrap_or_else(|| String::from("en-US"));
+    let filename = format!("{}.mo", current_locale);
+
+    let file_path = format!("{current_locale}.mo");
+    let path = Path::new(&file_path);
+    if path.exists() {
+        println!("LanguageFile: {file_path} exists!");
+
+        let f = File::open(filename).expect("could not open the catalog");
+        let catalog = Catalog::parse(f).expect("could not parse the catalog");
+
+        println!("Platform: {} Program was compiled on {}", CURRENT_PLATFORM,COMPILED_ON);
+        println!("The locale is {}", current_locale);
+        println!("Program v{}", VERSION);
+        println!("");
+        println!("{}", catalog.gettext("Hello World!"));
+        println!("");
+        println!("{}", catalog.gettext("Welcome to Rust"));
+        println!("");
+
+
+    } else {
+        println!("File: {file_path} does not exist! Program abort");
+    }
+
+}
+
+vi en-US.po
+
+msgid "Hello World!"
+msgstr "Hello World!"
+msgid "Welcome to Rust"
+msgstr "Welcome to Rust"
+
+vi de-DE.po
+
+msgid "Hello World!"
+msgstr "Hallo Welt!"
+msgid "Welcome to Rust"
+msgstr "Willkommen bei Rust"
+
+vi fr-FR.po
+
+msgid "Hello World!"
+msgstr "Bonjour le monde!"
+msgid "Welcome to Rust"
+msgstr "Bienvenue a Rust"
+
+vi it-IT.po
+
+msgid "Hello World!"
+msgstr "Ciao mondo!"
+msgid "Welcome to Rust"
+msgstr "Benvenuti a Rust"
+
+vi hu-HU.po
+
+msgid "Hello World!"
+msgstr "Hello Vilag!"
+msgid "Welcome to Rust"
+msgstr "üdvözöljük a Rust"
+
+msgfmt  en-US.po -o en-US.mo
+msgfmt  de-DE.po -o de-DE.mo
+msgfmt  fr-FR.po -o fr-FR.mo
+msgfmt  it-IT.po -o it-IT.mo
+msgfmt  hu-HU.po -o hu-HU.mo
+
+cargo run
+
+export LANG=de_DE.UTF-8
+
+cargo run
+
+export LANG=fr_FR.UTF-8
+
+cargo run
+
+export LANG=it_IT.UTF-8
+
+cargo run
+
+export LANG=hu_HU.UTF-8
+
+cargo run
+
+cargo build --target x86_64-pc-windows-gnu --release
+
+cargo build --release
+
